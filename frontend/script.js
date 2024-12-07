@@ -34,17 +34,22 @@ function addMessage(content, isBot = false) {
 }
 
 /** response */
-userInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    const userMessage = userInput.value.trim();
-    if (userMessage) {
-      addMessage(userMessage);
-      setTimeout(() => {
-        addMessage("This is an AI response.", true);
-      }, 1000);
-      userInput.value = "";
-    }
+inputForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const userMessage = userInput.value.trim();
+  if (userMessage) {
+    addMessage(userMessage);
+    userInput.value = "";
+
+    // Trimite cerere către backend
+    const response = await fetch("http://127.0.0.1:5000/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userMessage }),
+    });
+
+    const data = await response.json();
+    addMessage(data.response, true);
   }
 });
 
@@ -80,3 +85,12 @@ paperclipIcon.addEventListener("click", () => {
 cameraIcon.addEventListener("click", () => {
   alert("Open the camera!");
 });
+
+
+// Preia teme de discuție
+async function fetchTopics() {
+  const response = await fetch("http://127.0.0.1:5000/topics");
+  const data = await response.json();
+  console.log("Suggested topics:", data.topics);
+}
+fetchTopics();
