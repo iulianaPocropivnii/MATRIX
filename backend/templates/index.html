@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Chat Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css')}}" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <button class="toggle-sidebar">☰</button>
+        <div class="logo-container">
+          <img src="{{ url_for('static', filename='img/logo.png')}}" alt="Logo" class="sidebar-logo" />
+          <button class="new-chat-button">New Chat</button>
+        </div>
+        <ul id="chat-list"></ul>
+      </aside>
+
+      <!-- Main Chat Area -->
+      <main class="chat">
+        <div class="messages" id="messages"></div>
+
+        <!-- Input Form -->
+        <form class="input-form" id="input-form">
+          <button type="button" , class="button_sub">
+            <i class="fas fa-paperclip" title="Attach file"></i>
+          </button>
+          <textarea
+            id="user-input"
+            placeholder="Message AIChat"
+            aria-label="Message AIChat"
+          ></textarea>
+          <div class="button-container">
+            <button type="button" , class="button_sub">
+              <i class="fas fa-camera" title="Attach image"></i>
+            </button>
+            <button type="submit" , class="button_sub">
+              <i class="fas fa-paper-plane" title="Send message"></i>
+            </button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js')}}"></script>
+  </body>
+</html>
