@@ -36,3 +36,15 @@ def get_history():
     rows = cursor.fetchall()
     conn.close()
     return [{"user": row[0], "ai": row[1]} for row in rows]
+
+
+def clear_database():
+    """
+    Șterge toate înregistrările din tabelul 'history'.
+    """
+    conn = sqlite3.connect("chat_history.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM history")
+    conn.commit()
+    conn.close()
+

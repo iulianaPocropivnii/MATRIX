@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory, render_template,
 from flask_cors import CORS
 from ai_model import generate_response, suggest_topics,correct_grammar, generate_response_with_context
 import os
-from database import init_db, save_to_db, get_history
+from database import init_db, save_to_db, get_history, clear_database
 app = Flask(__name__)  # Specifică locația frontend-ului
 CORS(app)
 init_db()
@@ -21,6 +21,10 @@ def chat():
     """
     Endpoint pentru generarea răspunsurilor AI cu păstrarea contextului.
     """
+ 
+    # Șterge baza de date înainte de conversație
+    clear_database()
+    
     data = request.get_json()
     user_message = data.get("message")
     

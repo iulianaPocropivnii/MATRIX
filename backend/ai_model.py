@@ -6,7 +6,7 @@ def generate_response(user_message):
     """
     # Obține răspunsul de la model
     response = g4f.ChatCompletion.create(
-        model=g4f.models.gpt_35_turbo,
+        model=g4f.models.gpt_4o,
         messages=[{"role": "user", "content": user_message}],
     )
 
