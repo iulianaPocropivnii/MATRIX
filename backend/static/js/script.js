@@ -38,18 +38,26 @@ inputForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const userMessage = userInput.value.trim();
   if (userMessage) {
+    // Afișează mesajul utilizatorului
     addMessage(userMessage);
     userInput.value = "";
 
-    // Trimite cerere către backend
-    const response = await fetch("http://127.0.0.1:5000/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userMessage }),
-    });
+    try {
+      // Trimite cererea către backend
+      const response = await fetch("http://127.0.0.1:5000/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMessage }),
+      });
 
-    const data = await response.json();
-    addMessage(data.response, true);
+      const data = await response.json();
+
+      // Afișează răspunsul AI (corectarea propoziției + răspuns)
+      addMessage(data.response, true);
+    } catch (error) {
+      console.error("Error:", error);
+      addMessage("An error occurred. Please try again.", true);
+    }
   }
 });
 
@@ -85,7 +93,6 @@ paperclipIcon.addEventListener("click", () => {
 cameraIcon.addEventListener("click", () => {
   alert("Open the camera!");
 });
-
 
 // Preia teme de discuție
 async function fetchTopics() {
