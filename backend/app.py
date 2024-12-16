@@ -42,7 +42,7 @@ def chat():
         response_text = f"The correct sentence is: {corrected_message}\n\n{ai_response}"
     return jsonify({"response": response_text, "user_message": user_message})
 
-
+  
 @app.route("/history", methods=["GET"])
 def history():
     """

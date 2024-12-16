@@ -43,3 +43,4 @@ def suggest_topics(conversation_context=""):
         prompt = "Suggest 5 interesting topics for an English conversation."
     topics_response = generate_response(prompt)
     return topics_response.split("\n")[:5]
+  
