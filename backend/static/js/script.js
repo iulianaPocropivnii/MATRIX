@@ -7,6 +7,10 @@ const toggleSidebarButton = document.querySelector(".toggle-sidebar");
 const paperclipIcon = document.querySelector(".fa-paperclip");
 const cameraIcon = document.querySelector(".fa-camera");
 
+const fileInput = document.createElement("input");
+fileInput.type = "file";
+fileInput.accept = ".txt"; // Limităm fișierele la .txt
+
 let conversations = [];
 let currentConversation = [];
 
@@ -66,6 +70,29 @@ document
   .querySelector(".new-chat-button")
   .addEventListener("click", saveConversation);
 
+/** Save the current conversation */
+function saveConversation() {
+  if (currentConversation.length > 0) {
+    conversations.push([...currentConversation]); // Save the current conversation
+    currentConversation = []; // Reset the current conversation
+    console.log("Conversation saved:", conversations);
+
+    // Optionally update the UI
+    const chatItem = document.createElement("div");
+    chatItem.className = "chat-item";
+    chatItem.textContent = `Conversation ${conversations.length}`;
+    chatItem.addEventListener("click", () => {
+      // Load the saved conversation
+      messagesDiv.innerHTML = ""; // Clear messages
+      conversations[conversations.length - 1].forEach(({ content, isBot }) => {
+        addMessage(content, isBot);
+      });
+    });
+    chatList.appendChild(chatItem);
+  } else {
+    console.warn("No conversation to save!");
+  }
+}
 /** Sidebar */
 toggleSidebarButton.addEventListener("click", () => {
   sidebar.classList.toggle("hidden");
@@ -85,8 +112,37 @@ userInput.addEventListener("input", () => {
 });
 
 /** file */
+// Eveniment pentru încărcarea fișierului
 paperclipIcon.addEventListener("click", () => {
-  alert("Attach a file!");
+  fileInput.click(); // Deschide dialogul de alegere fișier
+});
+
+fileInput.addEventListener("change", async () => {
+  const file = fileInput.files[0]; // Obține fișierul selectat
+  if (file) {
+    const formData = new FormData();
+    formData.append("file", file); // Adaugă fișierul la FormData
+
+    try {
+      // Trimite fișierul la backend
+      const response = await fetch("http://127.0.0.1:5000/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      // Afișează toate întrebările generate ca un singur mesaj
+      if (data.questions) {
+        addMessage(data.questions, true); // Afișează toate întrebările concatenate
+      } else {
+        addMessage("No questions generated.", true); // Mesaj dacă nu sunt întrebări
+      }
+    } catch (error) {
+      console.error("Error:", error); // Verifică erorile în consola de dezvoltare
+      addMessage("An error occurred while uploading the file.", true);
+    }
+  }
 });
 
 /** camera */
