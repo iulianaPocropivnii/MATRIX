@@ -10,18 +10,25 @@ from transformers import (
 from werkzeug.utils import secure_filename
 from datasets import load_dataset
 import os
+import base64
+from io import BytesIO
+import cv2
+from keras.models import model_from_json
+import numpy as np
+from PIL import Image
 
-app = Flask(__name__)  # Specifică locația frontend-ului
+# Initialize the Flask app
+app = Flask(__name__)
 CORS(app)
 
 messages = []
 
-# Configurare directoare încărcare fișiere
+# Store conversation history
 UPLOAD_FOLDER = "./uploads"
 ALLOWED_EXTENSIONS = {"txt"}
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-# Încarcă modelul antrenat (sau îl antrenează doar o dată)
+# Load the trained model (or train it only once)
 model_path = "./fine_tuned_model"
 if os.path.exists(model_path):
     model = T5ForConditionalGeneration.from_pretrained(model_path)
@@ -46,21 +53,21 @@ else:
     train_dataset = dataset["train"].map(preprocess_function, batched=True)
     val_dataset = dataset["validation"].map(preprocess_function, batched=True)
 
-    # Selectăm un subset pentru rapiditate
+    # Select a subset for speed
     train_dataset = train_dataset.shuffle(seed=42).select(range(20000))
     val_dataset = val_dataset.shuffle(seed=42).select(range(4000))
 
-    # Configurare antrenare
+    # Training setup
     training_args = TrainingArguments(
         output_dir="./results",
         num_train_epochs=3,
-        per_device_train_batch_size=16,  # Creștere batch size
+        per_device_train_batch_size=16, 
         evaluation_strategy="epoch",
         save_strategy="epoch",
         logging_dir="./logs",
         logging_steps=10,
         learning_rate=5e-5,
-        fp16=True,  # Mixed precision pentru GPU
+        fp16=True,
         save_total_limit=2,
         report_to="none",
     )
@@ -74,7 +81,7 @@ else:
 
     trainer.train()
 
-    # Salvează modelul
+    # Save model
     model.save_pretrained(model_path)
     tokenizer.save_pretrained(model_path)
 
@@ -98,11 +105,11 @@ def upload_file():
         filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(filepath)
 
-        # Citește conținutul fișierului
+        # Reed file
         with open(filepath, "r", encoding="utf-8") as f:
             text = f.read()
 
-        # Generează întrebări
+        # Generate questions
         input_text = (
             f"Generate five diverse and unique questions from the following text. "
             f"Ensure the questions focus on different aspects of the context provided. Text: {text}"
@@ -185,5 +192,50 @@ def serve_static(filename):
     return send_from_directory(os.path.join("..", "frontend"), filename)
 
 
-if __name__ == "__main__":
+# Load the emotion detection model and weights
+json_file = open("", "r")
+model_json = json_file.read()
+json_file.close()
+model = model_from_json(model_json)
+model.load_weights("../Excalibur/MATRIX/backend/camera/models/emotiondetector.h5")
+
+# Load the Haar Cascade for face detection
+haar_file = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+face_cascade = cv2.CascadeClassifier(haar_file)
+
+labels = {0: 'angry', 1: 'disgust', 2: 'fear', 3: 'happy', 4: 'neutral', 5: 'sad', 6: 'surprise'}
+
+def extract_features(image):
+    feature = np.array(image)
+    feature = feature.reshape(1, 48, 48, 1)
+    return feature / 255.0
+
+@app.route('/detect_emotion', methods=['POST'])
+def detect_emotion():
+    data = request.get_json()
+    image_data = data['image']
+
+    img_data = base64.b64decode(image_data.split(',')[1])
+    img = Image.open(BytesIO(img_data))
+    img = np.array(img)  
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    
+    # Process the first detected face
+    if len(faces) > 0:
+        for (x, y, w, h) in faces:
+            face = gray[y:y+h, x:x+w]  
+            face_resized = cv2.resize(face, (48, 48))
+            face_preprocessed = extract_features(face_resized) 
+            
+            # Predict the emotion
+            pred = model.predict(face_preprocessed)
+            emotion = labels[pred.argmax()]
+            return jsonify({'emotion': emotion})
+    else:
+        return jsonify({'error': 'No face detected'})
+
+if __name__ == '__main__':
     app.run(debug=True)
