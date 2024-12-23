@@ -4,19 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Chat Platform</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css')}}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css')}}"
+    />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
   </head>
+
   <body>
     <div class="app">
       <!-- Sidebar -->
       <aside class="sidebar">
         <button class="toggle-sidebar">☰</button>
         <div class="logo-container">
-          <img src="{{ url_for('static', filename='img/logo.png')}}" alt="Logo" class="sidebar-logo" />
+          <img
+            src="{{ url_for('static', filename='img/logo.png')}}"
+            alt="Logo"
+            class="sidebar-logo"
+          />
           <button class="new-chat-button">New Chat</button>
         </div>
         <ul id="chat-list"></ul>
@@ -25,10 +33,29 @@
       <!-- Main Chat Area -->
       <main class="chat">
         <div class="messages" id="messages"></div>
+        <div id="emotion" style="font-size: 24px; margin-top: 20px"></div>
+        <div class="camera" id="input-camera" style="display: none">
+          <div class="button-container">
+            <video
+              id="webcam"
+              autoplay
+              playsinline
+              width="640"
+              height="480"
+              style="display: none"
+            ></video>
+            <canvas
+              id="output"
+              width="640"
+              height="480"
+              style="display: none"
+            ></canvas>
+          </div>
+        </div>
 
-        <!-- Input Form -->
+        <!-- Input Area -->
         <form class="input-form" id="input-form">
-          <button type="button" , class="button_sub">
+          <button type="button" class="button_sub">
             <i class="fas fa-paperclip" title="Attach file"></i>
           </button>
           <textarea
@@ -36,18 +63,17 @@
             placeholder="Message AIChat"
             aria-label="Message AIChat"
           ></textarea>
-          <div class="button-container">
-            <button type="button" , class="button_sub">
-              <i class="fas fa-camera" title="Attach image"></i>
-            </button>
-            <button type="submit" , class="button_sub">
-              <i class="fas fa-paper-plane" title="Send message"></i>
-            </button>
-          </div>
+          <button type="button" class="button_sub" id="start-camera">
+            <i class="fas fa-video" title="Turn on Camera"></i>
+          </button>
+          <button type="submit" class="button_sub">
+            <i class="fas fa-paper-plane" title="Send message"></i>
+          </button>
         </form>
       </main>
     </div>
 
     <script src="{{ url_for('static', filename='js/script.js')}}"></script>
+
   </body>
 </html>
