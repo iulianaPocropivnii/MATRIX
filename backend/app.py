@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory, render_template, url_for
 from flask_cors import CORS
-from ai_model import generate_response, suggest_topics, generate_response_with_context
+from ai_model import generate_response, generate_response_with_context
 from transformers import (
     T5Tokenizer,
     T5ForConditionalGeneration,
@@ -25,6 +25,8 @@ messages = []
 
 # Store conversation history
 UPLOAD_FOLDER = "backend/uploads"
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 ALLOWED_EXTENSIONS = {"txt"}
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
@@ -61,7 +63,7 @@ else:
     training_args = TrainingArguments(
         output_dir="./results",
         num_train_epochs=3,
-        per_device_train_batch_size=16, 
+        per_device_train_batch_size=16,
         evaluation_strategy="epoch",
         save_strategy="epoch",
         logging_dir="./logs",
@@ -86,15 +88,14 @@ else:
     tokenizer.save_pretrained(model_path)
 
 
+# Check if the uploaded file is allowed based on its extension
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+# Handle file uploads, validate them, and generate questions based on the file content
 @app.route("/upload", methods=["POST"])
 def upload_file():
-    """
-    Endpoint pentru încărcarea fișierului și generarea întrebărilor.
-    """
     if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
     file = request.files["file"]
@@ -114,7 +115,9 @@ def upload_file():
             f"Generate five diverse and unique questions from the following text. "
             f"Ensure the questions focus on different aspects of the context provided. Text: {text}"
         )
-        input_ids = qa_tokenizer(input_text[:512], return_tensors="pt", truncation=True).input_ids
+        input_ids = qa_tokenizer(
+            input_text[:512], return_tensors="pt", truncation=True
+        ).input_ids
         generated_ids = qa_model.generate(
             input_ids,
             max_length=50,
@@ -137,19 +140,15 @@ def upload_file():
         return jsonify({"error": "File type not allowed"}), 400
 
 
+# Serve the frontend of the application by rendering the main HTML file
 @app.route("/", methods=["GET"])
 def serve_frontend():
-    """
-    Servește pagina principală a aplicației (index.html).
-    """
     return render_template("index.html")
 
 
+# Handle chat interactions by processing user messages and generating AI responses
 @app.route("/generate", methods=["POST"])
 def chat():
-    """
-    Endpoint pentru generarea răspunsurilor AI cu păstrarea contextului.
-    """
     data = request.get_json()
     user_message = data.get("message")
     corrected_message = generate_response(
@@ -166,29 +165,16 @@ def chat():
         response_text = f"The correct sentence is: {corrected_message}\n\n{ai_response}"
     return jsonify({"response": response_text, "user_message": user_message})
 
-  
+
+# Provide the message history of the conversation
 @app.route("/history", methods=["GET"])
 def history():
-    """
-    Returnează istoricul conversației.
-    """
     return jsonify(messages)
 
 
-@app.route("/topics", methods=["GET"])
-def topics():
-    """
-    Returnează sugestii de subiecte generate de AI.
-    """
-    topics = suggest_topics()
-    return jsonify({"topics": topics})
-
-
+# Serve static files, such as CSS and JavaScript, from the frontend directory
 @app.route("/static/<path:filename>")
 def serve_static(filename):
-    """
-    Servește fișierele statice (CSS, JS, imagini).
-    """
     return send_from_directory(os.path.join("..", "frontend"), filename)
 
 
@@ -199,44 +185,56 @@ json_file.close()
 model = model_from_json(model_json)
 model.load_weights("../MATRIX/backend/camera_models/emotiondetector.h5")
 
-
 # Load the Haar Cascade for face detection
-haar_file = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+haar_file = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 face_cascade = cv2.CascadeClassifier(haar_file)
 
-labels = {0: 'angry', 1: 'disgust', 2: 'fear', 3: 'happy', 4: 'neutral', 5: 'sad', 6: 'surprise'}
+labels = {
+    0: "angry",
+    1: "disgust",
+    2: "fear",
+    3: "happy",
+    4: "neutral",
+    5: "sad",
+    6: "surprise",
+}
 
+
+# Preprocess the image to extract features for emotion detection
 def extract_features(image):
     feature = np.array(image)
     feature = feature.reshape(1, 48, 48, 1)
     return feature / 255.0
 
-@app.route('/detect_emotion', methods=['POST'])
+
+# Route to detect emotions from the uploaded image
+@app.route("/detect_emotion", methods=["POST"])
 def detect_emotion():
     data = request.get_json()
-    image_data = data['image']
+    image_data = data["image"]
 
-    img_data = base64.b64decode(image_data.split(',')[1])
+    img_data = base64.b64decode(image_data.split(",")[1])
     img = Image.open(BytesIO(img_data))
-    img = np.array(img)  
+    img = np.array(img)
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-    
+
     # Process the first detected face
     if len(faces) > 0:
-        for (x, y, w, h) in faces:
-            face = gray[y:y+h, x:x+w]  
+        for x, y, w, h in faces:
+            face = gray[y : y + h, x : x + w]
             face_resized = cv2.resize(face, (48, 48))
-            face_preprocessed = extract_features(face_resized) 
-            
+            face_preprocessed = extract_features(face_resized)
+
             # Predict the emotion
             pred = model.predict(face_preprocessed)
             emotion = labels[pred.argmax()]
-            return jsonify({'emotion': emotion})
+            return jsonify({"emotion": emotion})
     else:
-        return jsonify({'error': 'No face detected'})
+        return jsonify({"error": "No face detected"})
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app.run(debug=True)

@@ -1,3 +1,4 @@
 backend/__pycache__/
 .venv/
 backend/uploads/
+backend/har_and_cookies/
