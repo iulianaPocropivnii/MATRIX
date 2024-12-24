@@ -37,13 +37,14 @@ function addMessage(content, isBot = false) {
   currentConversation.push({ content, isBot });
 }
 
-// Submitting a user message
+// Handle the user input submission
 inputForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+
   const userMessage = userInput.value.trim();
   if (userMessage) {
     addMessage(userMessage);
-    userInput.value = "";
+    userInput.value = ""; // Clear input field after submitting
 
     try {
       const response = await fetch("http://127.0.0.1:5000/generate", {
@@ -53,7 +54,6 @@ inputForm.addEventListener("submit", async (e) => {
       });
 
       const data = await response.json();
-
       addMessage(data.response, true);
     } catch (error) {
       console.error("Error:", error);
@@ -62,15 +62,23 @@ inputForm.addEventListener("submit", async (e) => {
   }
 });
 
+// Allow sending the message with Enter key, and inserting line breaks with Shift+Enter
+userInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    inputForm.dispatchEvent(new Event("submit")); // Trigger form submit
+  }
+});
+
 // Save new conversation
 document
   .querySelector(".new-chat-button")
   .addEventListener("click", saveConversation);
 
-// Save the current conversation 
+// Save the current conversation
 function saveConversation() {
   if (currentConversation.length > 0) {
-    conversations.push([...currentConversation]); 
+    conversations.push([...currentConversation]);
     currentConversation = [];
     console.log("Conversation saved:", conversations);
 
@@ -101,7 +109,7 @@ toggleSidebarButton.addEventListener("click", () => {
     : "0px";
 });
 
-// Height input 
+// Height input
 userInput.addEventListener("input", () => {
   userInput.style.height = "20px";
   userInput.style.height = `${Math.min(userInput.scrollHeight, 40)}px`;
@@ -113,7 +121,7 @@ paperclipIcon.addEventListener("click", () => {
 });
 
 fileInput.addEventListener("change", async () => {
-  const file = fileInput.files[0]; 
+  const file = fileInput.files[0];
   if (file) {
     const formData = new FormData();
     formData.append("file", file);
@@ -128,12 +136,12 @@ fileInput.addEventListener("change", async () => {
 
       // Display all generated questions as a single message
       if (data.questions) {
-        addMessage(data.questions, true); 
+        addMessage(data.questions, true);
       } else {
         addMessage("No questions generated.", true);
       }
     } catch (error) {
-      console.error("Error:", error); 
+      console.error("Error:", error);
       addMessage("An error occurred while uploading the file.", true);
     }
   }
@@ -264,4 +272,3 @@ function stopEmotionDetection() {
     emotionText.innerHTML = "";
   }
 }
-
