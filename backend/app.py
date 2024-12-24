@@ -24,15 +24,15 @@ CORS(app)
 messages = []
 
 # Store conversation history
-UPLOAD_FOLDER = "./uploads"
+UPLOAD_FOLDER = "backend/uploads"
 ALLOWED_EXTENSIONS = {"txt"}
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 # Load the trained model (or train it only once)
-model_path = "./fine_tuned_model"
+model_path = "backend/fine_tuned_model"
 if os.path.exists(model_path):
-    model = T5ForConditionalGeneration.from_pretrained(model_path)
-    tokenizer = T5Tokenizer.from_pretrained(model_path)
+    qa_model = T5ForConditionalGeneration.from_pretrained(model_path)
+    qa_tokenizer = T5Tokenizer.from_pretrained(model_path)
 else:
     model = T5ForConditionalGeneration.from_pretrained("t5-small")
     tokenizer = T5Tokenizer.from_pretrained("t5-small")
@@ -114,8 +114,8 @@ def upload_file():
             f"Generate five diverse and unique questions from the following text. "
             f"Ensure the questions focus on different aspects of the context provided. Text: {text}"
         )
-        input_ids = tokenizer(input_text, return_tensors="pt").input_ids
-        generated_ids = model.generate(
+        input_ids = qa_tokenizer(input_text[:512], return_tensors="pt", truncation=True).input_ids
+        generated_ids = qa_model.generate(
             input_ids,
             max_length=50,
             num_return_sequences=5,
@@ -126,7 +126,7 @@ def upload_file():
             repetition_penalty=2.0,
         )
         questions = [
-            tokenizer.decode(g, skip_special_tokens=True) for g in generated_ids
+            qa_tokenizer.decode(g, skip_special_tokens=True) for g in generated_ids
         ]
         concatenated_questions = "\n".join(questions)
         message = f"give me some questions based on the given text: {text}"
@@ -193,11 +193,12 @@ def serve_static(filename):
 
 
 # Load the emotion detection model and weights
-json_file = open("", "r")
+json_file = open("../MATRIX/backend/camera_models/emotiondetector.json", "r")
 model_json = json_file.read()
 json_file.close()
 model = model_from_json(model_json)
-model.load_weights("../Excalibur/MATRIX/backend/camera/models/emotiondetector.h5")
+model.load_weights("../MATRIX/backend/camera_models/emotiondetector.h5")
+
 
 # Load the Haar Cascade for face detection
 haar_file = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
